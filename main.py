@@ -3,7 +3,6 @@ from textbase.message import Message
 from textbase import models
 import os
 from typing import List
-
 import re
 
 # Regular expression patterns to match specific user inputs
@@ -11,10 +10,6 @@ import re
 HELLO_PATTERNS = [r"(hi|hello|hey)"]
 GOODBYE_PATTERNS = [r"bye", r"goodbye", r"see you"]
 QUESTION_PATTERNS = [r"(what|where|when|why|how)"]
-
-# Custom patterns for weather and time-related questions
-WEATHER_PATTERNS = [r"weather", r"(temperature|rain|sunny|cloudy)"]
-TIME_PATTERNS = [r"time", r"(clock|hour|minute)"]
 # Load your OpenAI API key
 models.OpenAI.api_key = ""
 # or from environment variable:
@@ -37,6 +32,7 @@ SYSTEM_PROMPT = """You are chatting with an AI. There are no specific prefixes f
 
 # Keep track of previous user messages for context
 previous_messages = []
+
 
 @textbase.chatbot("talking-bot")
 def on_message(message_history: List[Message], state: dict = None):
