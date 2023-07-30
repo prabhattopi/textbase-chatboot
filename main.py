@@ -4,27 +4,19 @@ from textbase import models
 import os
 from typing import List
 import re
-
+from data import QA_DATABASE, WEATHER_PATTERNS, TIME_PATTERNS, count
 # Regular expression patterns to match specific user inputs
 # Add more patterns as needed
 HELLO_PATTERNS = [r"(hi|hello|hey)"]
 GOODBYE_PATTERNS = [r"bye", r"goodbye", r"see you"]
 QUESTION_PATTERNS = [r"(what|where|when|why|how)"]
 # Load your OpenAI API key
-models.OpenAI.api_key = ""
+# models.OpenAI.api_key = ""
 # or from environment variable:
 models.OpenAI.api_key = os.getenv("OPENAI_API_KEY")
 
-# Custom patterns for weather and time-related questions
-WEATHER_PATTERNS = [r"weather", r"(temperature|rain|sunny|cloudy)"]
-TIME_PATTERNS = [r"time", r"(clock|hour|minute)"]
 
-# Pre-defined question-answer pairs
-QA_DATABASE = {
-    "What is your name?": "I am the Talking Bot!",
-    "How are you?": "I'm just a chatbot, but I'm here to help!",
-    "What can you do?": "I can answer questions, have conversations, and more!",
-}
+
 
 # Prompt for GPT-3.5 Turbo
 SYSTEM_PROMPT = """You are chatting with an AI. There are no specific prefixes for responses, so you can ask or talk about anything you like. The AI will respond in a natural, conversational manner. Feel free to start the conversation with any question or topic, and let's have a pleasant chat!
@@ -53,17 +45,18 @@ def on_message(message_history: List[Message], state: dict = None):
 
     # Process the user's message
     processed_message = preprocess_user_message(user_message)
-
     # Check if the user's message is a repeat
-    if processed_message in previous_messages:
-        bot_response = "It looks like you already asked that. Is there anything else you'd like to know?"
-    else:
-        previous_messages.append(processed_message)
+   
+    # Check if the user's message matches any pre-defined question-answer pairs
+    if processed_message in QA_DATABASE:
+            count["counter"]+=1
+            if count["counter"]>=3:
+                   bot_response = "It looks like you already asked that. Is there anything else you'd like to know?"
+                   return bot_response, state  # Return the response without generating a new one
 
-        # Check if the user's message matches any pre-defined question-answer pairs
-        if processed_message in QA_DATABASE:
             bot_response = QA_DATABASE[processed_message]
-        else:
+    else:
+            count["counter"]=0
             # Check for specific user inputs using regular expressions
             if any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in HELLO_PATTERNS):
                 bot_response = "Hello there! How can I assist you today?"
@@ -91,8 +84,6 @@ def on_message(message_history: List[Message], state: dict = None):
 
             # Save the new question and its answer to the QA_DATABASE
             QA_DATABASE[processed_message] = bot_response
-            print(
-                f"New question: {processed_message}\nNew answer: {bot_response}")
 
     # Post-process the bot's response (optional)
     processed_bot_response = postprocess_bot_response(bot_response)
