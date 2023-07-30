@@ -20,6 +20,17 @@ models.OpenAI.api_key = ""
 # or from environment variable:
 models.OpenAI.api_key = os.getenv("OPENAI_API_KEY")
 
+# Custom patterns for weather and time-related questions
+WEATHER_PATTERNS = [r"weather", r"(temperature|rain|sunny|cloudy)"]
+TIME_PATTERNS = [r"time", r"(clock|hour|minute)"]
+
+# Pre-defined question-answer pairs
+QA_DATABASE = {
+    "What is your name?": "I am the Talking Bot!",
+    "How are you?": "I'm just a chatbot, but I'm here to help!",
+    "What can you do?": "I can answer questions, have conversations, and more!",
+}
+
 # Prompt for GPT-3.5 Turbo
 SYSTEM_PROMPT = """You are chatting with an AI. There are no specific prefixes for responses, so you can ask or talk about anything you like. The AI will respond in a natural, conversational manner. Feel free to start the conversation with any question or topic, and let's have a pleasant chat!
 """
@@ -45,38 +56,47 @@ def on_message(message_history: List[Message], state: dict = None):
     # Process the user's message
     processed_message = preprocess_user_message(user_message)
 
-    # Check for specific user inputs using regular expressions
-    if any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in HELLO_PATTERNS):
-        bot_response = "Hello there! How can I assist you today?"
-
-    elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in GOODBYE_PATTERNS):
-        bot_response = "Goodbye! Have a great day!"
-
-    elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in QUESTION_PATTERNS):
-        # Handle generic questions
-        bot_response = "That's an interesting question! Let me think..."
-        # Generate GPT-3.5 Turbo response with the updated system prompt
-        bot_response = models.OpenAI.generate(
-            system_prompt=bot_response,
-            message_history=message_history,
-            model="gpt-3.5-turbo",
-        )
-
-    elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in WEATHER_PATTERNS):
-        # Handle weather-related questions
-        bot_response = "The weather is nice today! It's sunny with a temperature of 25°C."
-
-    elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in TIME_PATTERNS):
-        # Handle time-related questions
-        bot_response = "The current time is 2:30 PM."
-
+    # Check if the user's message matches any pre-defined question-answer pairs
+    if processed_message in QA_DATABASE:
+        bot_response = QA_DATABASE[processed_message]
     else:
-        # If no specific pattern matched, use the default GPT-3.5 Turbo response
-        bot_response = models.OpenAI.generate(
-            system_prompt=SYSTEM_PROMPT,
-            message_history=message_history,
-            model="gpt-3.5-turbo",
-        )
+        # Check for specific user inputs using regular expressions
+        if any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in HELLO_PATTERNS):
+            bot_response = "Hello there! How can I assist you today?"
+
+        elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in GOODBYE_PATTERNS):
+            bot_response = "Goodbye! Have a great day!"
+
+        elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in QUESTION_PATTERNS):
+            # Handle generic questions
+            bot_response = "That's an interesting question! Let me think..."
+            # Generate GPT-3.5 Turbo response with the updated system prompt
+            bot_response = models.OpenAI.generate(
+                system_prompt=bot_response,
+                message_history=message_history,
+                model="gpt-3.5-turbo",
+            )
+
+        elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in WEATHER_PATTERNS):
+            # Handle weather-related questions
+            bot_response = "The weather is nice today! It's sunny with a temperature of 25°C."
+
+        elif any(re.search(pattern, processed_message, re.IGNORECASE) for pattern in TIME_PATTERNS):
+            # Handle time-related questions
+            bot_response = "The current time is 2:30 PM."
+
+        else:
+            # If no specific pattern matched, use the default GPT-3.5 Turbo response
+            bot_response = models.OpenAI.generate(
+                system_prompt=SYSTEM_PROMPT,
+                message_history=message_history,
+                model="gpt-3.5-turbo",
+            )
+
+     # Save the new question and its answer to the QA_DATABASE
+            QA_DATABASE[processed_message] = bot_response
+            print(
+                f"New question: {processed_message}\nNew answer: {bot_response}")
 
     # Post-process the bot's response (optional)
     processed_bot_response = postprocess_bot_response(bot_response)
